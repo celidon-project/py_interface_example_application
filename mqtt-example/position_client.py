@@ -18,11 +18,13 @@ mqtt_client.connect(mqtt_broker, mqtt_port)
 mqtt_iloc_topic = 'celidon/iloc'
 mqtt_poi_topic = 'celidon/poi'
 
-# setup example tag_ids for localization agents
-tag_ids = ['cafe060087081425', '1234568', '1234569']
+# setup example tag_ids and aliases for localization agents
+tag_ids = [('cafe060087081425', '10-1F'),
+           ('1234568', '10-1M'),
+           ('1234569', '10-2M')]
 
-# setup example poi_ids for localization agents
-poi_ids = ['feed020012341234']
+# setup example poi_ids and alias for localization agents
+poi_ids = [('feed020012341234', 'poi-123']
 
 # generate random positions
 positions_mm = {i: [5000, 5000, 3000] for i in tag_ids}
@@ -30,7 +32,7 @@ positions_mm = {i: [5000, 5000, 3000] for i in tag_ids}
 
 while True:
     # send iloc messages
-    for tag_id in tag_ids:
+    for tag_id, alias in tag_ids:
         # add random walk for each localization agent
         new_pos = []
         for pos in positions_mm[tag_id]:
@@ -45,7 +47,8 @@ while True:
         mqtt_iloc_dict = {
             tag_id: {
                 'ts': time_ms,
-                'pos': positions_mm[tag_id]
+                'pos': positions_mm[tag_id],
+                'alias': alias
             }
         }
 
@@ -56,7 +59,7 @@ while True:
         mqtt_client.publish(mqtt_iloc_topic, json.dumps(mqtt_iloc_dict))
 
     # send poi messages
-    for poi_id in poi_ids:
+    for poi_id, alias in poi_ids:
 
         # get current unix timestamp in ms
         time_ms = int(time.time() * 1000)
@@ -67,7 +70,8 @@ while True:
                 'ts': time_ms,
                 'to': 5000,
                 'pos': [10650, 10500, 1000],
-                'text': 'Emergency Exit'
+                'text': 'Emergency Exit',
+                'alias': alias
             }
         }
 

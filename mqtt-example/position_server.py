@@ -3,14 +3,6 @@
 import json
 import paho.mqtt.client as mqtt
 
-# Tag config. Configured tag-ids will be replaced by their name
-# <ID>: <Name>
-tag_config = {
-    'cafe060087081425': '10-1F',
-    '1234568': '10-1M',
-    '1234569': '10-2M',
-}
-
 # Initialize dictionaries for received messages
 iloc_dict = {}
 poi_dict = {}
@@ -24,24 +16,29 @@ def create_floor_dict(pos_dict, topic):
     # initialize empty floor dictionary
     floor_dict = {
         'topic': topic.split('/')[-1],  # remove celidon/ from topic
-        'floor-1': {},
-        'floor0': {},
-        'floor1': {},
-        'floor2': {},
-        'unknown': {}  # values outside of floor range
     }
 
     # map received positions to floors (based on z position)
     for key, value in pos_dict.items():
         if -2.76 <= value['pos'][2] < 0:
+            if 'floor-1' not in floor_dict:
+                floor_dict['floor-1'] = {}
             floor_dict['floor-1'][key] = value
         elif 0 <= value['pos'][2] < 3.510:
+            if 'floor0' not in floor_dict:
+                floor_dict['floor0'] = {}
             floor_dict['floor0'][key] = value
         elif 3.510 <= value['pos'][2] < 6.520:
+            if 'floor1' not in floor_dict:
+                floor_dict['floor1'] = {}
             floor_dict['floor1'][key] = value
         elif 6.520 <= value['pos'][2] < 9.530:
+            if 'floor2' not in floor_dict:
+                floor_dict['floor2'] = {}
             floor_dict['floor2'][key] = value
         else:
+            if 'unknown' not in floor_dict:
+                floor_dict['unknown'] = {}
             floor_dict['unknown'][key] = value
 
     return floor_dict
@@ -60,8 +57,8 @@ def on_message(mqtt_client, userdata, msg):
         # add received data to position dictionary
         for tag_id, data in recv_data.items():
             position_m = [p / 1000 for p in data['pos']]
-            iloc_dict[tag_config.get(tag_id, str(tag_id))] = {'ts': data['ts'],
-                                                              'pos': position_m}
+            iloc_dict[data['alias']] = {'ts': data['ts'],
+                                        'pos': position_m}
 
         floor_dict = create_floor_dict(iloc_dict, msg.topic)
         # log received iloc message
@@ -73,10 +70,10 @@ def on_message(mqtt_client, userdata, msg):
         # add received data to position dictionary
         for poi_id, data in recv_data.items():
             position_m = [p / 1000 for p in data['pos']]
-            poi_dict[str(poi_id)] = {'ts': data['ts'],
-                                     'to': data['to'],
-                                     'pos': position_m,
-                                     'text': data['text']}
+            poi_dict[data['alias']] = {'ts': data['ts'],
+                                       'to': data['to'],
+                                       'pos': position_m,
+                                       'text': data['text']}
 
         floor_dict = create_floor_dict(poi_dict, msg.topic)
         # log received poi message
